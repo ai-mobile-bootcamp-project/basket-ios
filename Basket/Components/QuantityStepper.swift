@@ -10,6 +10,7 @@ import SwiftUI
     private let style: Style
     private let onDecrement: () -> Void
     private let onIncrement: () -> Void
+    private let onValueTap: (() -> Void)?
 
     init(value: Binding<Int>, range: ClosedRange<Int> = BasketRules.quantityRange, style: Style = .full) {
         let current = min(max(value.wrappedValue, range.lowerBound), range.upperBound)
@@ -29,16 +30,20 @@ import SwiftUI
                 value.wrappedValue = clamped + 1
             }
         }
+        self.onValueTap = nil
     }
 
+    /// `onValueTap`, when set, makes the number tappable (e.g. to type a quantity).
     init(value: Int, canDecrement: Bool, canIncrement: Bool, style: Style = .compact,
-         onDecrement: @escaping () -> Void, onIncrement: @escaping () -> Void) {
+         onDecrement: @escaping () -> Void, onIncrement: @escaping () -> Void,
+         onValueTap: (() -> Void)? = nil) {
         self.value = value
         self.canDecrement = canDecrement
         self.canIncrement = canIncrement
         self.style = style
         self.onDecrement = onDecrement
         self.onIncrement = onIncrement
+        self.onValueTap = onValueTap
     }
 
     var body: some View {
@@ -62,12 +67,7 @@ import SwiftUI
             .buttonStyle(.borderless)
             .disabled(!canDecrement)
 
-            Text(String(value))
-                .font(BasketFont.Money.body)
-                .foregroundColor(BasketColor.onSurface)
-                .lineLimit(1)
-                .frame(minWidth: 44)
-                .accessibilityLabel(String(value))
+            valueLabel
 
             Button(action: onIncrement) {
                 Image(systemName: "plus")
@@ -84,6 +84,29 @@ import SwiftUI
             Capsule()
                 .strokeBorder(BasketColor.outlineVariant, lineWidth: 1)
         )
+    }
+
+    @ViewBuilder
+    private var valueLabel: some View {
+        if let onValueTap = onValueTap {
+            Button(action: onValueTap) {
+                valueText
+                    .frame(minHeight: 48)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless)
+        } else {
+            valueText
+        }
+    }
+
+    private var valueText: some View {
+        Text(String(value))
+            .font(BasketFont.Money.body)
+            .foregroundColor(BasketColor.onSurface)
+            .lineLimit(1)
+            .frame(minWidth: 44)
+            .accessibilityLabel(String(value))
     }
 
     private var compactStepper: some View {

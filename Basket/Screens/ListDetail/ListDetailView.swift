@@ -11,6 +11,7 @@ import SwiftUI
     @EnvironmentObject private var toast: ToastCenter
     @Environment(\.locale) private var locale
     @Environment(\.layoutDirection) private var layoutDirection
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var isRenaming = false
     @State private var isFinishing = false
@@ -38,7 +39,7 @@ import SwiftUI
 
         return Group {
             if list.items.isEmpty {
-                EmptyStateView(systemImage: "cart", title: L10n.tr("detail.empty", locale))
+                EmptyStateView(systemImage: "basket", title: L10n.tr("detail.empty", locale))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 itemList(list: list, sections: sections)
@@ -63,7 +64,7 @@ import SwiftUI
                         Label(L10n.tr("common.rename", locale), systemImage: "pencil")
                     }
 
-                    Button {
+                    Button(role: .destructive) {
                         viewModel.clearBasket(listId: list.id)
                     } label: {
                         Label(L10n.tr("detail.clearBasket", locale), systemImage: "trash")
@@ -77,7 +78,7 @@ import SwiftUI
                     }
                     .disabled(list.items.isEmpty)
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "ellipsis")
                 }
                 .accessibilityLabel(L10n.tr("common.more", locale))
             }
@@ -117,11 +118,7 @@ import SwiftUI
                         row(item: item, index: index, list: list)
                     }
                 } header: {
-                    Text(L10n.format("detail.sectionHeader", locale, section.category.name, section.items.count))
-                        .font(BasketFont.titleSmall)
-                        .foregroundColor(BasketColor.secondary)
-                        .textCase(nil)
-                        .accessibilityAddTraits(.isHeader)
+                    aisleHeader(section)
                 }
             }
 
@@ -149,6 +146,7 @@ import SwiftUI
                 onRemove: { viewModel.remove(item, locale: locale) })
             .listRowBackground(Color.white)
             .listRowInsets(EdgeInsets(top: 0, leading: BasketSpacing.xs, bottom: 0, trailing: BasketSpacing.lg))
+            .listRowSeparator(.hidden)
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 Button(role: .destructive) {
                     viewModel.remove(at: index, in: list, locale: locale)
@@ -156,6 +154,22 @@ import SwiftUI
                     Label(L10n.tr("common.delete", locale), systemImage: "trash")
                 }
             }
+    }
+
+    private func aisleHeader(_ section: BasketRules.ItemSection) -> some View {
+        HStack(spacing: BasketSpacing.sm) {
+            if let emoji = section.category.emoji {
+                Text(emoji)
+                    .font(BasketFont.titleSmall)
+                    .accessibilityHidden(true)
+            }
+            Text(L10n.format("detail.sectionHeader", locale, section.category.name, section.items.count))
+                .font(BasketFont.titleSmall)
+                .foregroundColor(BasketColor.secondary)
+                .textCase(nil)
+                .accessibilityAddTraits(.isHeader)
+        }
+        .padding(.leading, BasketSpacing.xs)
     }
 
     private func inBasketHeader(count: Int) -> some View {
@@ -214,29 +228,38 @@ import SwiftUI
                     .buttonStyle(PrimaryButtonStyle())
                 }
 
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: BasketSpacing.md) {
-                        browseButton(listId: list.id)
-                        addButton(listId: list.id)
-                    }
-                    VStack(spacing: BasketSpacing.sm) {
-                        addButton(listId: list.id)
-                        browseButton(listId: list.id)
-                    }
-                }
+                actionButtons(listId: list.id)
             }
             .padding(.horizontal, BasketSpacing.lg)
             .padding(.top, BasketSpacing.md)
             .padding(.bottom, BasketSpacing.sm)
         }
-        .background(BasketColor.surfaceContainerLow.ignoresSafeArea(edges: .bottom))
+        .background(BasketColor.surface.ignoresSafeArea(edges: .bottom))
+    }
+
+    @ViewBuilder
+    private func actionButtons(listId: UUID) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: BasketSpacing.sm) {
+                addButton(listId: listId)
+                    .buttonStyle(PrimaryButtonStyle())
+                browseButton(listId: listId)
+            }
+        } else {
+            HStack(spacing: BasketSpacing.md) {
+                browseButton(listId: listId)
+                addButton(listId: listId)
+                    .buttonStyle(FloatingButtonStyle())
+                    .layoutPriority(1)
+            }
+        }
     }
 
     private func browseButton(listId: UUID) -> some View {
         Button {
             router.push(.browse(listId: listId))
         } label: {
-            Label(L10n.tr("detail.browse", locale), systemImage: "magnifyingglass")
+            Label(L10n.tr("detail.browse", locale), systemImage: "storefront")
         }
         .buttonStyle(TonalButtonStyle())
     }
@@ -247,7 +270,6 @@ import SwiftUI
         } label: {
             Label(L10n.tr("detail.addItem", locale), systemImage: "plus")
         }
-        .buttonStyle(PrimaryButtonStyle())
     }
 
     // MARK: - Share

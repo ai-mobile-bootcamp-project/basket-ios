@@ -77,9 +77,15 @@ import SwiftUI
         store.removeAllItems(listId: listId)
     }
 
+    /// Removes the bought items at once; Undo puts them back.
     func finishShopping(listId: UUID, locale: Locale) {
+        let bought = store.list(id: listId)?.items.filter(\.isTicked) ?? []
         store.removeTickedItems(listId: listId)
-        toast.show(L10n.tr("detail.finish.done", locale))
+        let basketStore = store
+        toast.show(L10n.tr("detail.finish.done", locale),
+                   actionTitle: L10n.tr("common.undo", locale)) {
+            basketStore.restoreItems(bought)
+        }
     }
 
     func rename(listId: UUID, to name: String) {

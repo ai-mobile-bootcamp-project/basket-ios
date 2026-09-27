@@ -79,6 +79,7 @@ import SwiftUI
             router.push(.settings)
         } label: {
             Image(systemName: "gearshape")
+                .foregroundColor(BasketColor.onSurface)
                 .frame(minWidth: BasketSpacing.touchTarget, minHeight: BasketSpacing.touchTarget)
                 .contentShape(Rectangle())
         }
@@ -91,7 +92,7 @@ import SwiftUI
         } label: {
             Label(L10n.tr("lists.newList", locale), systemImage: "plus")
         }
-        .buttonStyle(FloatingButtonStyle())
+        .buttonStyle(FloatingButtonStyle(tonal: true))
         .padding(BasketSpacing.lg)
     }
 

@@ -52,18 +52,16 @@ struct SampleData: Decodable {
     }
 }
 
-/// Inserts the default categories and sample lists into a context. The caller saves.
+/// Inserts the default categories or the sample lists into a context. The caller saves.
 @MainActor
 enum SampleSeeder {
-    static func seed(into context: NSManagedObjectContext, locale: Locale, now: Date = Date()) {
-        let sample = SampleData.load()
-        var categoryEntries = sample?.categories ?? []
+    /// Inserts the default categories in aisle order, Other last.
+    static func seedCategories(into context: NSManagedObjectContext, locale: Locale) {
+        var categoryEntries = SampleData.load()?.categories ?? []
         if categoryEntries.isEmpty {
             categoryEntries = SampleData.defaultCategoryEntries
         }
 
-        var categoriesByKey: [String: CategoryMO] = [:]
-        var otherCategory: CategoryMO?
         for (index, entry) in categoryEntries.enumerated() {
             let category = CategoryMO.insert(into: context)
             category.id = UUID()
@@ -71,17 +69,26 @@ enum SampleSeeder {
             category.position = Int32(index)
             category.defaultKey = entry.key
             category.isOther = entry.isOther ?? false
-            categoriesByKey[entry.key] = category
-            if category.isOther {
-                otherCategory = category
-            }
         }
-        if otherCategory == nil {
-            otherCategory = categoriesByKey[DefaultCategory.other.rawValue]
+    }
+
+    /// Inserts the sample lists. Each item goes to the existing category with the matching default key,
+    /// or to Other when there is none. The first list is the most recently changed.
+    static func seedLists(into context: NSManagedObjectContext, locale: Locale, now: Date = Date()) {
+        guard let sample = SampleData.load() else { return }
+        let otherCategory = fetchOtherCategory(in: context)
+
+        var categoriesByKey: [String: CategoryMO] = [:]
+        for listEntry in sample.lists {
+            for itemEntry in listEntry.items ?? [] {
+                guard let key = itemEntry.category, categoriesByKey[key] == nil,
+                      let match = fetchCategory(defaultKey: key, in: context) else { continue }
+                categoriesByKey[key] = match
+            }
         }
 
         let baseDate = now.addingTimeInterval(-24 * 60 * 60)
-        for (listIndex, listEntry) in (sample?.lists ?? []).enumerated() {
+        for (listIndex, listEntry) in sample.lists.enumerated() {
             let list = ShoppingListMO.insert(into: context)
             list.id = UUID()
             list.name = localized(listEntry.nameKey, fallback: listEntry.name, locale: locale)
@@ -102,6 +109,20 @@ enum SampleSeeder {
                 item.list = list
             }
         }
+    }
+
+    private static func fetchCategory(defaultKey key: String, in context: NSManagedObjectContext) -> CategoryMO? {
+        let request = CategoryMO.request()
+        request.predicate = NSPredicate(format: "defaultKey == %@", key as NSString)
+        request.fetchLimit = 1
+        return (try? context.fetch(request))?.first
+    }
+
+    private static func fetchOtherCategory(in context: NSManagedObjectContext) -> CategoryMO? {
+        let request = CategoryMO.request()
+        request.predicate = NSPredicate(format: "isOther == YES")
+        request.fetchLimit = 1
+        return (try? context.fetch(request))?.first
     }
 
     private static func localized(_ key: String?, fallback: String, locale: Locale) -> String {

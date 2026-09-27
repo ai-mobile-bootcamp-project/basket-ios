@@ -48,10 +48,10 @@ import SwiftUI
             .padding(.trailing, BasketSpacing.xs)
         }
         .background {
-            RoundedRectangle(cornerRadius: BasketShape.medium, style: .continuous)
+            RoundedRectangle(cornerRadius: BasketShape.large, style: .continuous)
                 .fill(BasketColor.surfaceContainerLow)
         }
-        .contentShape(RoundedRectangle(cornerRadius: BasketShape.medium, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: BasketShape.large, style: .continuous))
         .contextMenu {
             actions
         }
@@ -61,32 +61,29 @@ import SwiftUI
 
     private var summary: some View {
         let progress = BasketRules.progress(for: list.items)
-        return VStack(alignment: .leading, spacing: BasketSpacing.sm) {
+        return Group {
             if dynamicTypeSize.isAccessibilitySize {
-                heading(progress)
-                if !list.items.isEmpty {
-                    totals(stacked: true)
+                VStack(alignment: .leading, spacing: BasketSpacing.md) {
+                    textColumn(progress)
+                    if !list.items.isEmpty {
+                        totals(stacked: true)
+                    }
                 }
             } else {
-                HStack(alignment: .top, spacing: BasketSpacing.md) {
-                    heading(progress)
+                HStack(alignment: .top, spacing: BasketSpacing.lg) {
+                    textColumn(progress)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     if !list.items.isEmpty {
                         totals(stacked: false)
                     }
                 }
             }
-            if progress.count > 0 {
-                progressBar(progress)
-            }
-            if progress.isDone {
-                doneLabel
-            }
         }
         .accessibilityElement(children: .combine)
     }
 
-    private func heading(_ progress: BasketRules.Progress) -> some View {
+    /// Name, "3 of 10 in basket", then the bar (or "Done") under the same column.
+    private func textColumn(_ progress: BasketRules.Progress) -> some View {
         VStack(alignment: .leading, spacing: BasketSpacing.xs) {
             Text(list.name)
                 .font(BasketFont.titleMedium)
@@ -99,6 +96,14 @@ import SwiftUI
                 .foregroundColor(BasketColor.onSurfaceVariant)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
+            if progress.count > 0 {
+                progressBar(progress)
+                    .padding(.top, BasketSpacing.sm)
+            }
+            if progress.isDone {
+                doneLabel
+                    .padding(.top, BasketSpacing.xs)
+            }
         }
     }
 
@@ -178,7 +183,7 @@ private struct ListCardProgressStyle: ProgressViewStyle {
         let fraction = min(max(configuration.fractionCompleted ?? 0, 0), 1)
         return Capsule()
             .fill(BasketColor.primaryContainer)
-            .frame(height: 6)
+            .frame(height: 4)
             .overlay(alignment: .leading) {
                 GeometryReader { proxy in
                     Capsule()

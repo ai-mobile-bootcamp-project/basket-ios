@@ -17,6 +17,7 @@ cached for offline use.
 
 | # | Screen | What it does |
 | --- | --- | --- |
+| 0 | Welcome | First launch only: start with the sample lists or with no lists |
 | 1 | Lists | Home: every shopping list with progress and estimated total; create, rename, duplicate, delete |
 | 2 | List detail | One list: items by aisle, tick off, quantities, totals, share, finish shopping |
 | 3 | Add / edit item | Name, quantity, price, category and note for an item typed by hand or edited |
@@ -43,7 +44,7 @@ Basket/                     App target
   Components/               Shared views: toast with Undo, quantity stepper, product image, name entry sheet, ...
   Persistence/              Core Data stack, managed objects, BasketStore, sample data
   Network/                  Catalog service and catalog cache
-  Screens/                  One folder per screen (Lists, ListDetail, ItemForm, Browse, ProductDetail,
+  Screens/                  One folder per screen (Welcome, Lists, ListDetail, ItemForm, Browse, ProductDetail,
                             Categories, Settings)
   Resources/                Asset catalog, sample data, en/es/ar localizations
   Info.plist

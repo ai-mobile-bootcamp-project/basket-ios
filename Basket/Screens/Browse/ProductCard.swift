@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Grid card for one catalog product: thumbnail, discount and stock badges, name, prices and the add control.
+/// Grid card for one catalog product: photo with discount and stock badges, name, prices and the add control.
 @MainActor
 struct ProductCard: View {
     let product: CatalogProduct
@@ -35,13 +35,22 @@ struct ProductCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: BasketSpacing.sm) {
+        VStack(alignment: .leading, spacing: 0) {
             thumbnail
+                .layoutPriority(1)
             details
-            Spacer(minLength: 0)
+                .padding(.horizontal, BasketSpacing.md)
+                .padding(.top, BasketSpacing.md)
+            Spacer(minLength: BasketSpacing.xs)
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                addControl
+                    .accessibilitySortPriority(1)
+            }
+            .padding(.horizontal, BasketSpacing.sm)
+            .padding(.bottom, BasketSpacing.sm)
         }
-        .padding(12)
-        .frame(height: 280)
+        .frame(height: 300)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: BasketShape.medium, style: .continuous))
         .overlay {
@@ -54,29 +63,52 @@ struct ProductCard: View {
         .accessibilityElement(children: .contain)
     }
 
-    // MARK: Thumbnail
+    // MARK: Photo
 
     private var thumbnail: some View {
         Color.clear
-            .aspectRatio(1, contentMode: .fit)
+            .frame(maxWidth: .infinity)
+            .frame(height: 150)
             .overlay {
                 ProductImage(url: product.thumbnailURL)
+                    .padding(BasketSpacing.sm)
             }
             .background(BasketColor.surfaceContainerHigh)
-            .clipShape(RoundedRectangle(cornerRadius: BasketShape.small, style: .continuous))
+            .clipped()
             .overlay(alignment: .topLeading) {
                 if let percent = discountPercent {
                     DiscountBadge(text: "\u{2212}" + String(percent) + "%")
-                        .padding(6)
+                        .padding(BasketSpacing.sm)
                         .accessibilitySortPriority(2)
                 }
             }
-            .overlay(alignment: .bottomTrailing) {
-                addControl
-                    .padding(4)
-                    .accessibilitySortPriority(1)
+            .overlay(alignment: .bottomLeading) {
+                stockBadges
+                    .padding(BasketSpacing.sm)
+                    .accessibilitySortPriority(2)
             }
     }
+
+    private var stockBadges: some View {
+        VStack(alignment: .leading, spacing: BasketSpacing.xs) {
+            if product.availabilityStatus == "Low stock" {
+                StockBadge(
+                    availability: .lowStock,
+                    lowText: L10n.tr("browse.lowStock", locale),
+                    outText: L10n.tr("browse.outOfStock", locale)
+                )
+            }
+            if isOutOfStock {
+                StockBadge(
+                    availability: .outOfStock,
+                    lowText: L10n.tr("browse.lowStock", locale),
+                    outText: L10n.tr("browse.outOfStock", locale)
+                )
+            }
+        }
+    }
+
+    // MARK: Add control
 
     @ViewBuilder
     private var addControl: some View {
@@ -103,12 +135,12 @@ struct ProductCard: View {
         }
     }
 
-    // MARK: Name, prices, stock
+    // MARK: Name and prices
 
     private var details: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: BasketSpacing.xs) {
             Text(product.title)
-                .font(BasketFont.titleSmall)
+                .font(BasketFont.bodyLarge)
                 .foregroundColor(BasketColor.onSurface)
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
@@ -126,21 +158,6 @@ struct ProductCard: View {
                         .lineLimit(1)
                 }
             }
-
-            if product.availabilityStatus == "Low stock" {
-                StockBadge(
-                    availability: .lowStock,
-                    lowText: L10n.tr("browse.lowStock", locale),
-                    outText: L10n.tr("browse.outOfStock", locale)
-                )
-            }
-            if isOutOfStock {
-                StockBadge(
-                    availability: .outOfStock,
-                    lowText: L10n.tr("browse.lowStock", locale),
-                    outText: L10n.tr("browse.outOfStock", locale)
-                )
-            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -156,26 +173,37 @@ struct ProductCardSkeleton: View {
     init() {}
 
     var body: some View {
-        VStack(alignment: .leading, spacing: BasketSpacing.sm) {
-            RoundedRectangle(cornerRadius: BasketShape.small, style: .continuous)
+        VStack(alignment: .leading, spacing: 0) {
+            Rectangle()
                 .fill(BasketColor.surfaceContainerHighest)
-                .aspectRatio(1, contentMode: .fit)
-            Text(verbatim: "Product name")
-                .font(BasketFont.titleSmall)
-                .lineLimit(2)
-            Text(verbatim: "$0.00")
-                .font(BasketFont.Money.title)
-                .lineLimit(1)
-            Spacer(minLength: 0)
+                .frame(maxWidth: .infinity)
+                .frame(height: 150)
+            VStack(alignment: .leading, spacing: BasketSpacing.xs) {
+                Text(verbatim: "Product name")
+                    .font(BasketFont.bodyLarge)
+                    .lineLimit(2)
+                Text(verbatim: "$0.00")
+                    .font(BasketFont.Money.title)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, BasketSpacing.md)
+            .padding(.top, BasketSpacing.md)
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                Circle()
+                    .fill(BasketColor.surfaceContainerHighest)
+                    .frame(width: 48, height: 48)
+            }
+            .padding(BasketSpacing.sm)
         }
         .redacted(reason: .placeholder)
         .foregroundColor(BasketColor.onSurfaceVariant)
-        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: BasketShape.medium, style: .continuous)
                 .fill(BasketColor.surfaceContainerLow)
         )
+        .clipShape(RoundedRectangle(cornerRadius: BasketShape.medium, style: .continuous))
         .accessibilityHidden(true)
     }
 }

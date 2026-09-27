@@ -10,6 +10,7 @@ struct ProductDetailView: View {
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var toast: ToastCenter
     @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @State private var quantity = 1
     @State private var hasSetInitialQuantity = false
@@ -90,41 +91,72 @@ struct ProductDetailView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: BasketSpacing.sm) {
+        VStack(alignment: .leading, spacing: BasketSpacing.md) {
             Text(product.title)
-                .font(BasketFont.headlineSmall)
+                .font(BasketFont.headlineMedium)
                 .foregroundColor(BasketColor.onSurface)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
-            Text(L10n.tr("category." + product.defaultCategory.rawValue, locale))
-                .font(BasketFont.labelLarge)
-                .foregroundColor(BasketColor.onSecondaryContainer)
-                .padding(.horizontal, BasketSpacing.md)
-                .padding(.vertical, 6)
-                .background(Capsule().fill(BasketColor.secondaryContainer))
+            categoryTag
         }
+    }
+
+    private var categoryTag: some View {
+        HStack(spacing: BasketSpacing.sm) {
+            Text(product.defaultCategory.emoji)
+                .accessibilityHidden(true)
+            Text(L10n.tr("category." + product.defaultCategory.rawValue, locale))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(BasketFont.labelLarge)
+        .foregroundColor(BasketColor.onSecondaryContainer)
+        .padding(.horizontal, BasketSpacing.md)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: BasketShape.small, style: .continuous)
+                .fill(BasketColor.secondaryContainer)
+        )
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: Price
 
     private var priceBlock: some View {
-        VStack(alignment: .leading, spacing: BasketSpacing.sm) {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: BasketSpacing.sm) {
-                    payPrice
-                    originalPrice
-                }
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .center, spacing: BasketSpacing.md) {
+                pricePair
+                saveBadge
+            }
+            VStack(alignment: .leading, spacing: BasketSpacing.sm) {
+                pricePair
+                saveBadge
+            }
+            VStack(alignment: .leading, spacing: BasketSpacing.sm) {
                 VStack(alignment: .leading, spacing: BasketSpacing.xs) {
                     payPrice
                     originalPrice
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(priceAccessibilityLabel)
+                saveBadge
             }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(priceAccessibilityLabel)
+        }
+    }
 
-            if let percent = discountPercent {
-                DiscountBadge(text: L10n.format("product.save", locale, percent))
-            }
+    private var pricePair: some View {
+        HStack(alignment: .firstTextBaseline, spacing: BasketSpacing.sm) {
+            payPrice
+            originalPrice
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(priceAccessibilityLabel)
+    }
+
+    @ViewBuilder
+    private var saveBadge: some View {
+        if let percent = discountPercent {
+            DiscountBadge(text: L10n.format("product.save", locale, percent))
+                .fixedSize()
         }
     }
 
@@ -165,9 +197,9 @@ struct ProductDetailView: View {
 
     private var stockIcon: String {
         switch product.availability {
-        case .inStock: return "checkmark.circle.fill"
-        case .lowStock: return "exclamationmark.triangle.fill"
-        case .outOfStock: return "xmark.circle.fill"
+        case .inStock: return "checkmark.circle"
+        case .lowStock: return "exclamationmark.triangle"
+        case .outOfStock: return "xmark.circle"
         }
     }
 
@@ -182,12 +214,13 @@ struct ProductDetailView: View {
     private var stockLine: some View {
         HStack(spacing: BasketSpacing.sm) {
             Image(systemName: stockIcon)
-                .foregroundColor(stockColor)
+                .font(BasketFont.titleMedium)
                 .accessibilityHidden(true)
             Text(stockText)
                 .font(BasketFont.bodyLarge)
-                .foregroundColor(BasketColor.onSurface)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .foregroundColor(stockColor)
         .accessibilityElement(children: .combine)
     }
 
@@ -251,38 +284,32 @@ struct ProductDetailView: View {
 
     private var bottomBar: some View {
         let current = existing
-        return VStack(alignment: .leading, spacing: BasketSpacing.md) {
-            HStack(spacing: BasketSpacing.md) {
-                Group {
-                    if let current = current {
-                        Text(L10n.format("product.onList", locale, current.quantity))
-                    } else {
-                        Text(L10n.tr("product.quantity", locale))
-                    }
+        return VStack(alignment: .leading, spacing: BasketSpacing.sm) {
+            if let current = current {
+                Text(L10n.format("product.onList", locale, current.quantity))
+                    .font(BasketFont.titleSmall)
+                    .foregroundColor(BasketColor.onSurfaceVariant)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: BasketSpacing.md) {
+                    quantityStepper
+                    submitButton(current: current)
                 }
-                .font(BasketFont.titleSmall)
-                .foregroundColor(BasketColor.onSurfaceVariant)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-
-                QuantityStepper(value: $quantity)
-                    .disabled(isOutOfStock)
+            } else {
+                HStack(spacing: BasketSpacing.md) {
+                    quantityStepper
+                    submitButton(current: current)
+                }
             }
-
-            Button {
-                submit(current: current)
-            } label: {
-                Text(primaryTitle(current: current))
-                    .multilineTextAlignment(.center)
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(isOutOfStock || isSubmitting)
         }
         .padding(.horizontal, BasketSpacing.lg)
         .padding(.top, BasketSpacing.md)
         .padding(.bottom, BasketSpacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            BasketColor.surfaceContainerLow
+            BasketColor.surface
                 .ignoresSafeArea(edges: .bottom)
         )
         .overlay(alignment: .top) {
@@ -290,6 +317,26 @@ struct ProductDetailView: View {
                 .fill(BasketColor.outlineVariant)
                 .frame(height: 0.5)
         }
+    }
+
+    private var quantityStepper: some View {
+        QuantityStepper(value: $quantity)
+            .fixedSize()
+            .disabled(isOutOfStock)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(L10n.tr("product.quantity", locale))
+    }
+
+    private func submitButton(current: ListItem?) -> some View {
+        Button {
+            submit(current: current)
+        } label: {
+            Text(primaryTitle(current: current))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .buttonStyle(PrimaryButtonStyle())
+        .disabled(isOutOfStock || isSubmitting)
     }
 
     private func primaryTitle(current: ListItem?) -> String {

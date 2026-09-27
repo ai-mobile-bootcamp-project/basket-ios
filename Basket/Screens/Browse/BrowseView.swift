@@ -107,7 +107,7 @@ struct BrowseView: View {
                         noResultsView
                     } else {
                         Text(L10n.format("browse.productCount", locale, products.count))
-                            .font(BasketFont.labelLarge)
+                            .font(BasketFont.bodyMedium)
                             .foregroundColor(BasketColor.onSurfaceVariant)
                             .padding(.horizontal, BasketSpacing.lg)
                         LazyVGrid(columns: columns, spacing: 12) {
@@ -205,11 +205,12 @@ struct BrowseView: View {
     private var chipsRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: BasketSpacing.sm) {
-                chip(label: Text(verbatim: "All"), isSelected: viewModel.selectedCategory == nil) {
+                chip(emoji: nil, label: Text(verbatim: "All"), isSelected: viewModel.selectedCategory == nil) {
                     viewModel.selectedCategory = nil
                 }
                 ForEach(DefaultCategory.browseChips, id: \.self) { category in
                     chip(
+                        emoji: category.emoji,
                         label: Text(L10n.tr("category." + category.rawValue, locale)),
                         isSelected: viewModel.selectedCategory == category
                     ) {
@@ -221,12 +222,17 @@ struct BrowseView: View {
         }
     }
 
-    private func chip(label: Text, isSelected: Bool, action: @escaping () -> Void) -> some View {
+    private func chip(emoji: String?, label: Text, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: BasketSpacing.xs) {
+            HStack(spacing: BasketSpacing.sm) {
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(BasketFont.labelMedium)
+                        .font(BasketFont.labelLarge)
+                        .accessibilityHidden(true)
+                }
+                if let emoji = emoji {
+                    Text(emoji)
+                        .font(BasketFont.labelLarge)
                         .accessibilityHidden(true)
                 }
                 label
@@ -234,19 +240,18 @@ struct BrowseView: View {
                     .lineLimit(1)
             }
             .foregroundColor(isSelected ? BasketColor.onPrimaryContainer : BasketColor.onSurfaceVariant)
-            .padding(.horizontal, BasketSpacing.md)
-            .padding(.vertical, 6)
-            .frame(minHeight: 32)
+            .padding(.horizontal, BasketSpacing.lg)
+            .padding(.vertical, BasketSpacing.sm)
+            .frame(minHeight: 44)
             .background(
-                RoundedRectangle(cornerRadius: BasketShape.small, style: .continuous)
+                Capsule()
                     .fill(isSelected ? BasketColor.primaryContainer : Color.clear)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: BasketShape.small, style: .continuous)
-                    .stroke(isSelected ? Color.clear : BasketColor.outline, lineWidth: 1)
+                Capsule()
+                    .strokeBorder(isSelected ? Color.clear : BasketColor.outline, lineWidth: 1)
             }
-            .frame(minHeight: BasketSpacing.touchTarget)
-            .contentShape(Rectangle())
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])

@@ -318,6 +318,15 @@ final class CatalogMappingTests: XCTestCase {
                        [.fruitVeg, .dairyEggs, .meatFish, .pantry, .frozen, .drinks, .householdPets])
     }
 
+    func testCategoryEmoji() {
+        XCTAssertEqual(DefaultCategory.allCases.map { $0.emoji }, [
+            "🍎", "🍞", "🥛", "🥩", "🫙", "🧊", "🧃", "🧻", "🛒"
+        ])
+        XCTAssertEqual(ItemCategory(name: "Bakery", position: 1, defaultKey: .bakery).emoji, "🍞")
+        XCTAssertEqual(ItemCategory(name: "Other", position: 8, defaultKey: .other, isOther: true).emoji, "🛒")
+        XCTAssertNil(ItemCategory(name: "Snacks", position: 9).emoji)
+    }
+
     // MARK: - Availability
 
     func testAvailabilityExactValues() {

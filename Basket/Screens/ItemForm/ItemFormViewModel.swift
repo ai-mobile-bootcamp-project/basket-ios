@@ -117,13 +117,19 @@ import SwiftUI
         BasketRules.trimmedName(name) != nil && priceInput != .invalid
     }
 
-    func lineTotalText(locale: Locale) -> String? {
+    /// "6 × $1.74 =" and "$10.44" for the line under the price field; nil without a valid price.
+    func lineTotalParts(locale: Locale) -> (calculation: String, total: String)? {
         guard case .valid(let cents) = priceInput else { return nil }
         let total = BasketRules.lineTotalCents(unitCents: cents, quantity: quantity) ?? 0
-        return L10n.format("form.lineTotal", locale,
-                           quantity,
-                           BasketRules.formatMoney(cents, locale: locale),
-                           BasketRules.formatMoney(total, locale: locale))
+        let calculation = L10n.format("form.lineTotal", locale,
+                                      quantity,
+                                      BasketRules.formatMoney(cents, locale: locale))
+        return (calculation: calculation, total: BasketRules.formatMoney(total, locale: locale))
+    }
+
+    var selectedCategory: ItemCategory? {
+        guard let categoryId = categoryId else { return nil }
+        return store.categories.first { $0.id == categoryId }
     }
 
     // MARK: - Suggestions

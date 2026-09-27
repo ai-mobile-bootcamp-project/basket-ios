@@ -163,6 +163,30 @@ final class BasketStore: ObservableObject {
         commit()
     }
 
+    /// Restores several removed items at once; items that still exist or whose list is gone are skipped.
+    func restoreItems(_ items: [ListItem]) {
+        let now = Date()
+        var restoredAny = false
+        for item in items {
+            guard let listObject = fetchList(item.listId), fetchItem(item.id) == nil else { continue }
+            let object = ItemMO.insert(into: context)
+            object.id = item.id
+            object.name = item.name
+            object.quantity = Int32(clamping: item.quantity)
+            object.priceCents = item.priceCents.map { NSNumber(value: $0) }
+            object.catalogProductId = item.catalogProductId.map { NSNumber(value: $0) }
+            object.note = item.note
+            object.isTicked = item.isTicked
+            object.createdAt = item.createdAt
+            object.category = categoryObject(for: item.categoryId)
+            object.list = listObject
+            listObject.updatedAt = now
+            restoredAny = true
+        }
+        guard restoredAny else { return }
+        commit()
+    }
+
     func setTicked(itemId: UUID, _ isTicked: Bool) {
         guard let object = fetchItem(itemId) else { return }
         object.isTicked = isTicked
@@ -271,10 +295,21 @@ final class BasketStore: ObservableObject {
 
     // MARK: - Sample data
 
-    func seedIfNeeded() {
-        let count = (try? context.count(for: CategoryMO.request())) ?? 0
-        guard count == 0 else { return }
-        SampleSeeder.seed(into: context, locale: AppSettings.shared.locale)
+    /// Inserts the default categories when there are none yet.
+    func seedDefaultCategoriesIfNeeded() {
+        guard categoryObjectCount() == 0 else { return }
+        SampleSeeder.seedCategories(into: context, locale: AppSettings.shared.locale)
+        commit()
+    }
+
+    /// Adds the sample lists; their items use the existing default categories.
+    func seedSampleLists() {
+        let locale = AppSettings.shared.locale
+        if categoryObjectCount() == 0 {
+            SampleSeeder.seedCategories(into: context, locale: locale)
+            save()
+        }
+        SampleSeeder.seedLists(into: context, locale: locale)
         commit()
     }
 
@@ -289,7 +324,10 @@ final class BasketStore: ObservableObject {
             context.delete(object)
         }
         save()
-        SampleSeeder.seed(into: context, locale: AppSettings.shared.locale)
+        let locale = AppSettings.shared.locale
+        SampleSeeder.seedCategories(into: context, locale: locale)
+        save()
+        SampleSeeder.seedLists(into: context, locale: locale)
         commit()
     }
 
@@ -314,6 +352,10 @@ final class BasketStore: ObservableObject {
         lists = BasketRules.sortedLists(listObjects.map { $0.toModel() })
         let categoryObjects = (try? context.fetch(CategoryMO.request())) ?? []
         categories = BasketRules.orderedCategories(categoryObjects.map { $0.toModel() })
+    }
+
+    private func categoryObjectCount() -> Int {
+        (try? context.count(for: CategoryMO.request())) ?? 0
     }
 
     private func fetchList(_ id: UUID) -> ShoppingListMO? {

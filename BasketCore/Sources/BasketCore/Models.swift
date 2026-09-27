@@ -28,6 +28,21 @@ public enum DefaultCategory: String, CaseIterable, Codable, Hashable {
         }
     }
 
+    /// Aisle emoji shown next to the category name. Decorative; rendered by the system emoji font.
+    public var emoji: String {
+        switch self {
+        case .fruitVeg: return "🍎"
+        case .bakery: return "🍞"
+        case .dairyEggs: return "🥛"
+        case .meatFish: return "🥩"
+        case .pantry: return "🫙"
+        case .frozen: return "🧊"
+        case .drinks: return "🧃"
+        case .householdPets: return "🧻"
+        case .other: return "🛒"
+        }
+    }
+
     /// Category chips shown on Browse products, after "All".
     public static let browseChips: [DefaultCategory] = [
         .fruitVeg, .dairyEggs, .meatFish, .pantry, .frozen, .drinks, .householdPets
@@ -47,6 +62,11 @@ public struct ItemCategory: Identifiable, Hashable {
         self.position = position
         self.defaultKey = defaultKey
         self.isOther = isOther
+    }
+
+    /// Emoji of a default category; custom categories have none.
+    public var emoji: String? {
+        defaultKey?.emoji
     }
 }
 

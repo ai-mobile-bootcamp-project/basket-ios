@@ -6,7 +6,10 @@ import SwiftUI
     @EnvironmentObject private var toast: ToastCenter
     @Environment(\.locale) private var locale
 
+    @ScaledMetric(relativeTo: .title2) private var emojiColumnWidth: CGFloat = 32
+
     @State private var activeSheet: CategoryNameSheet? = nil
+    @State private var editMode: EditMode = .inactive
 
     init() {}
 
@@ -36,6 +39,7 @@ import SwiftUI
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
+        .environment(\.editMode, $editMode)
         .background {
             BasketColor.surface.ignoresSafeArea()
         }
@@ -47,7 +51,7 @@ import SwiftUI
                 titleView
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                EditButton()
+                editButton
             }
         }
         .sheet(item: $activeSheet) { sheet in
@@ -77,23 +81,38 @@ import SwiftUI
         .accessibilityAddTraits(.isHeader)
     }
 
+    /// Reorder switch for the list (Edit / Done), in the app's language.
+    private var editButton: some View {
+        Button {
+            withAnimation {
+                editMode = editMode.isEditing ? .inactive : .active
+            }
+        } label: {
+            Text(L10n.tr(editMode.isEditing ? "common.done" : "common.edit", locale))
+                .fontWeight(editMode.isEditing ? .semibold : .regular)
+                .frame(minWidth: BasketSpacing.touchTarget, minHeight: BasketSpacing.touchTarget)
+                .contentShape(Rectangle())
+        }
+    }
+
     private func categoryRow(_ category: ItemCategory, isFirst: Bool, isLast: Bool) -> some View {
         HStack(spacing: BasketSpacing.sm) {
             rowText(category)
                 .accessibilityElement(children: .combine)
-                .accessibilityAction(named: L10n.tr("common.moveUp", locale)) {
-                    store.moveCategory(id: category.id, by: -1)
-                }
-                .accessibilityAction(named: L10n.tr("common.moveDown", locale)) {
-                    store.moveCategory(id: category.id, by: 1)
+                .accessibilityActions {
+                    if !isFirst {
+                        Button(L10n.tr("common.moveUp", locale)) {
+                            store.moveCategory(id: category.id, by: -1)
+                        }
+                    }
+                    if !isLast {
+                        Button(L10n.tr("common.moveDown", locale)) {
+                            store.moveCategory(id: category.id, by: 1)
+                        }
+                    }
                 }
 
             Menu {
-                Button {
-                    activeSheet = .rename(id: category.id, name: category.name)
-                } label: {
-                    Label(L10n.tr("common.rename", locale), systemImage: "pencil")
-                }
                 Button {
                     store.moveCategory(id: category.id, by: -1)
                 } label: {
@@ -106,6 +125,11 @@ import SwiftUI
                     Label(L10n.tr("common.moveDown", locale), systemImage: "arrow.down")
                 }
                 .disabled(isLast)
+                Button {
+                    activeSheet = .rename(id: category.id, name: category.name)
+                } label: {
+                    Label(L10n.tr("common.rename", locale), systemImage: "pencil")
+                }
                 Button(role: .destructive) {
                     delete(category)
                 } label: {
@@ -126,7 +150,7 @@ import SwiftUI
     private func otherRow(_ category: ItemCategory) -> some View {
         HStack(spacing: BasketSpacing.sm) {
             rowText(category)
-            Image(systemName: "lock.fill")
+            Image(systemName: "lock")
                 .font(BasketFont.bodyLarge)
                 .foregroundColor(BasketColor.onSurfaceVariant)
                 .frame(width: BasketSpacing.touchTarget, height: BasketSpacing.touchTarget)
@@ -136,18 +160,27 @@ import SwiftUI
         .accessibilityElement(children: .combine)
     }
 
+    /// Emoji (default categories only), name and item count.
     private func rowText(_ category: ItemCategory) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(category.name)
-                .font(BasketFont.bodyLarge)
-                .foregroundColor(BasketColor.onSurface)
-            Text(L10n.format("categories.itemCount", locale, store.itemCount(categoryId: category.id)))
-                .font(BasketFont.bodyMedium)
-                .foregroundColor(BasketColor.onSurfaceVariant)
+        HStack(spacing: BasketSpacing.md) {
+            if let emoji = category.emoji {
+                Text(emoji)
+                    .font(BasketFont.titleLarge)
+                    .frame(width: emojiColumnWidth)
+                    .accessibilityHidden(true)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(category.name)
+                    .font(BasketFont.bodyLarge)
+                    .foregroundColor(BasketColor.onSurface)
+                Text(itemCountText(for: category))
+                    .font(BasketFont.bodyMedium)
+                    .foregroundColor(BasketColor.onSurfaceVariant)
+            }
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .multilineTextAlignment(.leading)
-        .fixedSize(horizontal: false, vertical: true)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var addButton: some View {
@@ -155,9 +188,21 @@ import SwiftUI
             activeSheet = .add
         } label: {
             Label(L10n.tr("categories.add", locale), systemImage: "plus")
+                .labelStyle(.titleAndIcon)
         }
-        .buttonStyle(TonalButtonStyle())
-        .padding(.top, BasketSpacing.md)
+        .buttonStyle(OutlinedButtonStyle())
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, BasketSpacing.lg)
+    }
+
+    // MARK: - Values
+
+    private func itemCountText(for category: ItemCategory) -> String {
+        let count = store.itemCount(categoryId: category.id)
+        if count == 0 {
+            return L10n.tr("categories.noItems", locale)
+        }
+        return L10n.format("categories.itemCount", locale, count)
     }
 
     // MARK: - Sheets

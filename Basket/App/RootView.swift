@@ -3,13 +3,21 @@ import SwiftUI
 @MainActor struct RootView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var router: AppRouter
+    @EnvironmentObject private var store: BasketStore
+    @AppStorage("basket.onboardingDone") private var onboardingDone = false
 
     var body: some View {
-        NavigationStack(path: $router.path) {
-            ListsView()
-                .navigationDestination(for: Route.self) { route in
-                    destination(for: route)
+        Group {
+            if onboardingDone {
+                NavigationStack(path: $router.path) {
+                    ListsView()
+                        .navigationDestination(for: Route.self) { route in
+                            destination(for: route)
+                        }
                 }
+            } else {
+                WelcomeView(seedSampleData: { store.seedSampleLists() })
+            }
         }
         .overlay(alignment: .bottom) { ToastOverlay() }
         .environment(\.locale, settings.locale)

@@ -12,6 +12,11 @@ struct BasketApp: App {
         URLCache.shared = URLCache(memoryCapacity: 20 * 1024 * 1024,
                                    diskCapacity: 150 * 1024 * 1024,
                                    directory: nil)
+        BasketStore.shared.seedDefaultCategoriesIfNeeded()
+        // Installs that already have lists skip the Welcome screen.
+        if !UserDefaults.standard.bool(forKey: "basket.onboardingDone") && !BasketStore.shared.lists.isEmpty {
+            UserDefaults.standard.set(true, forKey: "basket.onboardingDone")
+        }
     }
 
     var body: some Scene {
@@ -21,7 +26,6 @@ struct BasketApp: App {
                 .environmentObject(settings)
                 .environmentObject(router)
                 .environmentObject(toast)
-                .onAppear { store.seedIfNeeded() }
         }
     }
 }

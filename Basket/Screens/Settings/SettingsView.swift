@@ -1,12 +1,14 @@
 import SwiftUI
 
-/// Preferences: theme, language, list behaviour, catalog refresh, reset and about.
+/// Preferences: appearance, list behaviour, catalog refresh, reset and about.
 @MainActor struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var store: BasketStore
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var toast: ToastCenter
     @Environment(\.locale) private var locale
+
+    @ScaledMetric(relativeTo: .title2) private var iconColumnWidth: CGFloat = 28
 
     @State private var lastUpdated: Date? = nil
     @State private var isRefreshing = false
@@ -18,11 +20,9 @@ import SwiftUI
 
     var body: some View {
         List {
-            themeSection
-            languageSection
+            appearanceSection
             listsSection
-            catalogSection
-            resetSection
+            dataSection
             aboutSection
         }
         .listStyle(.insetGrouped)
@@ -48,64 +48,66 @@ import SwiftUI
 
     // MARK: - Sections
 
-    private var themeSection: some View {
+    private var appearanceSection: some View {
         Section {
-            Picker(L10n.tr("settings.theme", locale), selection: $settings.theme) {
-                ForEach(BasketThemeMode.allCases, id: \.self) { mode in
-                    Text(themeName(mode))
-                        .font(BasketFont.bodyLarge)
-                        .foregroundColor(BasketColor.onSurface)
-                        .tag(mode)
+            Menu {
+                Picker(L10n.tr("settings.theme", locale), selection: $settings.theme) {
+                    ForEach(BasketThemeMode.allCases, id: \.self) { mode in
+                        Text(themeName(mode))
+                            .tag(mode)
+                    }
                 }
+            } label: {
+                settingsRow(
+                    systemImage: "circle.lefthalf.filled",
+                    title: L10n.tr("settings.theme", locale),
+                    subtitle: themeName(settings.theme)
+                )
             }
-            .pickerStyle(.inline)
-            .labelsHidden()
+            .accessibilityLabel(L10n.tr("settings.theme", locale))
+            .accessibilityValue(themeName(settings.theme))
             .listRowBackground(BasketColor.surfaceContainerLow)
-        } header: {
-            sectionHeader("settings.theme")
-        }
-    }
 
-    private var languageSection: some View {
-        Section {
-            Picker(L10n.tr("settings.language", locale), selection: $settings.language) {
-                ForEach(AppLanguage.allCases) { language in
-                    Text(languageName(language))
-                        .font(BasketFont.bodyLarge)
-                        .foregroundColor(BasketColor.onSurface)
-                        .tag(language)
+            Menu {
+                Picker(L10n.tr("settings.language", locale), selection: $settings.language) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(languageName(language))
+                            .tag(language)
+                    }
                 }
+            } label: {
+                settingsRow(
+                    systemImage: "globe",
+                    title: L10n.tr("settings.language", locale),
+                    subtitle: languageName(settings.language)
+                )
             }
-            .pickerStyle(.inline)
-            .labelsHidden()
+            .accessibilityLabel(L10n.tr("settings.language", locale))
+            .accessibilityValue(languageName(settings.language))
             .listRowBackground(BasketColor.surfaceContainerLow)
         } header: {
-            sectionHeader("settings.language")
+            sectionHeader("settings.appearance")
         }
     }
 
     private var listsSection: some View {
         Section {
             Toggle(isOn: $settings.moveTickedDown) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L10n.tr("settings.moveTicked", locale))
-                        .font(BasketFont.bodyLarge)
-                        .foregroundColor(BasketColor.onSurface)
-                    Text(L10n.tr("settings.moveTicked.subtitle", locale))
-                        .font(BasketFont.bodyMedium)
-                        .foregroundColor(BasketColor.onSurfaceVariant)
-                }
-                .fixedSize(horizontal: false, vertical: true)
+                settingsRow(
+                    systemImage: "checklist",
+                    title: L10n.tr("settings.moveTicked", locale),
+                    subtitle: L10n.tr("settings.moveTicked.subtitle", locale)
+                )
             }
             .tint(BasketColor.primary)
-            .frame(minHeight: BasketSpacing.rowMinHeight)
             .listRowBackground(BasketColor.surfaceContainerLow)
 
             NavigationLink(value: Route.categories) {
-                Text(L10n.tr("settings.categories", locale))
-                    .font(BasketFont.bodyLarge)
-                    .foregroundColor(BasketColor.onSurface)
-                    .frame(minHeight: BasketSpacing.touchTarget)
+                settingsRow(
+                    systemImage: "square.on.circle",
+                    title: L10n.tr("settings.categories", locale),
+                    subtitle: L10n.tr("settings.categories.subtitle", locale)
+                )
             }
             .listRowBackground(BasketColor.surfaceContainerLow)
         } header: {
@@ -113,83 +115,100 @@ import SwiftUI
         }
     }
 
-    private var catalogSection: some View {
+    private var dataSection: some View {
         Section {
             Button {
                 refreshCatalog()
             } label: {
                 HStack(spacing: BasketSpacing.md) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(L10n.tr("settings.refreshCatalog", locale))
-                            .font(BasketFont.bodyLarge)
-                            .foregroundColor(BasketColor.onSurface)
-                        Text(lastUpdatedText)
-                            .font(BasketFont.bodyMedium)
-                            .foregroundColor(BasketColor.onSurfaceVariant)
-                    }
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
+                    settingsRow(
+                        systemImage: "arrow.clockwise",
+                        title: L10n.tr("settings.refreshCatalog", locale),
+                        subtitle: lastUpdatedText
+                    )
                     if isRefreshing {
                         ProgressView()
                             .tint(BasketColor.primary)
-                    } else {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundColor(BasketColor.primary)
-                            .accessibilityHidden(true)
                     }
                 }
-                .frame(minHeight: BasketSpacing.rowMinHeight)
                 .contentShape(Rectangle())
             }
             .disabled(isRefreshing)
             .accessibilityValue(isRefreshing ? L10n.tr("settings.refreshing", locale) : "")
             .listRowBackground(BasketColor.surfaceContainerLow)
-        } header: {
-            sectionHeader("settings.catalog")
-        }
-    }
 
-    private var resetSection: some View {
-        Section {
             Button {
                 isResetAlertPresented = true
             } label: {
-                Text(L10n.tr("settings.reset", locale))
-                    .font(BasketFont.bodyLarge)
-                    .foregroundColor(BasketColor.error)
-                    .frame(maxWidth: .infinity, minHeight: BasketSpacing.touchTarget, alignment: .leading)
-                    .contentShape(Rectangle())
+                settingsRow(
+                    systemImage: "arrow.counterclockwise",
+                    title: L10n.tr("settings.reset", locale),
+                    subtitle: L10n.tr("settings.reset.subtitle", locale),
+                    accent: BasketColor.error
+                )
             }
             .listRowBackground(BasketColor.surfaceContainerLow)
+        } header: {
+            sectionHeader("settings.data")
         }
     }
 
     private var aboutSection: some View {
         Section {
-            Text(L10n.format("settings.version", locale, appVersion))
-                .font(BasketFont.bodyLarge)
-                .foregroundColor(BasketColor.onSurface)
-                .frame(minHeight: BasketSpacing.touchTarget)
-                .listRowBackground(BasketColor.surfaceContainerLow)
+            settingsRow(
+                systemImage: "info.circle",
+                title: L10n.tr("settings.version", locale),
+                subtitle: appVersion
+            )
+            .accessibilityElement(children: .combine)
+            .listRowBackground(BasketColor.surfaceContainerLow)
 
             Link(destination: Self.catalogWebsite) {
                 HStack(spacing: BasketSpacing.md) {
-                    Text(L10n.tr("settings.productData", locale))
+                    settingsRow(
+                        systemImage: "tray.full",
+                        title: L10n.tr("settings.productData", locale),
+                        subtitle: L10n.tr("settings.productData.subtitle", locale)
+                    )
+                    Image(systemName: "arrow.up.right.square")
                         .font(BasketFont.bodyLarge)
-                        .foregroundColor(BasketColor.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Image(systemName: "globe")
                         .foregroundColor(BasketColor.onSurfaceVariant)
                         .accessibilityHidden(true)
                 }
-                .frame(minHeight: BasketSpacing.touchTarget)
                 .contentShape(Rectangle())
             }
             .listRowBackground(BasketColor.surfaceContainerLow)
         } header: {
             sectionHeader("settings.about")
         }
+    }
+
+    // MARK: - Rows
+
+    /// Leading icon, title and a secondary line. `accent` colours the icon and title (Reset uses error).
+    private func settingsRow(systemImage: String, title: String, subtitle: String,
+                             accent: Color? = nil) -> some View {
+        HStack(spacing: BasketSpacing.lg) {
+            Image(systemName: systemImage)
+                .font(BasketFont.titleLarge)
+                .foregroundColor(accent ?? BasketColor.onSurfaceVariant)
+                .frame(width: iconColumnWidth)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(BasketFont.bodyLarge)
+                    .foregroundColor(accent ?? BasketColor.onSurface)
+                Text(subtitle)
+                    .font(BasketFont.bodyMedium)
+                    .foregroundColor(BasketColor.onSurfaceVariant)
+            }
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(minHeight: BasketSpacing.rowMinHeight)
+        .contentShape(Rectangle())
     }
 
     private func sectionHeader(_ key: String) -> some View {

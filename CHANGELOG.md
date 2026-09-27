@@ -5,7 +5,16 @@ All notable changes to this project are documented in this file. The format is b
 
 ## Unreleased
 
-Nothing yet.
+### Added
+
+- Welcome screen on first launch: start with the sample lists or with no lists
+- Category emoji in aisle headers, filter chips, the item category field, product details and Categories
+
+### Changed
+
+- Refreshed design for Lists, List detail, Add / edit item, Browse products, Product detail, Categories and Settings
+- Finish shopping removes bought items at once with Undo
+- Sample lists are no longer added automatically on first launch; default categories always are
 
 ## 1.0.0 — 2026-09-27
 

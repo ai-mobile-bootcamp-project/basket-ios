@@ -7,12 +7,15 @@ import SwiftUI
     @EnvironmentObject private var router: AppRouter
     @EnvironmentObject private var toast: ToastCenter
     @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @FocusState private var focusedField: Field?
     @State private var isConfirmingDiscard = false
+    @State private var isEnteringQuantity = false
+    @State private var quantityEntry = ""
 
     private enum Field: Hashable {
-        case name, quantity, price, note
+        case name, price, note
     }
 
     init(listId: UUID, itemId: UUID?) {
@@ -21,7 +24,7 @@ import SwiftUI
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: BasketSpacing.xl) {
+            VStack(alignment: .leading, spacing: BasketSpacing.lg) {
                 nameField
                 quantityField
                 priceField
@@ -58,7 +61,12 @@ import SwiftUI
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 if viewModel.isEditing {
-                    Button { deleteItem() } label: { Image(systemName: "trash").accessibilityHidden(true) }
+                    Button { deleteItem() } label: {
+                        Image(systemName: "trash")
+                            .foregroundColor(BasketColor.error)
+                            .accessibilityHidden(true)
+                    }
+                    .tint(BasketColor.error)
                 }
             }
             ToolbarItemGroup(placement: .keyboard) {
@@ -97,8 +105,6 @@ import SwiftUI
 
     private var nameField: some View {
         VStack(alignment: .leading, spacing: BasketSpacing.xs) {
-            fieldLabel(L10n.tr("form.name", locale))
-
             TextField(L10n.tr("form.namePlaceholder", locale), text: $viewModel.name)
                 .textInputAutocapitalization(.sentences)
                 .submitLabel(.next)
@@ -106,8 +112,10 @@ import SwiftUI
                 .onSubmit {
                     focusedField = .price
                 }
-                .modifier(FormFieldStyle(isError: viewModel.showsNameError))
                 .accessibilityLabel(L10n.tr("form.name", locale))
+                .modifier(OutlinedFieldStyle(label: L10n.tr("form.name", locale),
+                                             isError: viewModel.showsNameError,
+                                             isFocused: focusedField == .name))
 
             HStack(alignment: .firstTextBaseline, spacing: BasketSpacing.sm) {
                 if viewModel.showsNameError {
@@ -116,6 +124,7 @@ import SwiftUI
                 Spacer(minLength: 0)
                 counterText(count: viewModel.name.count, max: BasketRules.maxItemNameLength)
             }
+            .padding(.horizontal, BasketSpacing.lg)
 
             if focusedField == .name {
                 suggestionList
@@ -134,7 +143,7 @@ import SwiftUI
                         focusedField = nil
                     } label: {
                         HStack(spacing: BasketSpacing.md) {
-                            Image(systemName: suggestion.product == nil ? "list.bullet" : "tag")
+                            Image(systemName: suggestion.product == nil ? "list.bullet" : "storefront")
                                 .foregroundColor(BasketColor.secondary)
                                 .accessibilityHidden(true)
                             Text(suggestion.name)
@@ -143,7 +152,7 @@ import SwiftUI
                                 .multilineTextAlignment(.leading)
                             Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, BasketSpacing.md)
+                        .padding(.horizontal, BasketSpacing.lg)
                         .frame(minHeight: BasketSpacing.touchTarget)
                         .contentShape(Rectangle())
                     }
@@ -154,12 +163,12 @@ import SwiftUI
                         Rectangle()
                             .fill(BasketColor.outlineVariant)
                             .frame(height: 1)
-                            .padding(.leading, BasketSpacing.md)
+                            .padding(.leading, BasketSpacing.lg)
                     }
                 }
             }
             .background(
-                RoundedRectangle(cornerRadius: BasketShape.medium, style: .continuous)
+                RoundedRectangle(cornerRadius: BasketShape.small, style: .continuous)
                     .fill(BasketColor.surfaceContainerHigh)
             )
         }
@@ -167,42 +176,54 @@ import SwiftUI
 
     // MARK: - Quantity
 
+    @ViewBuilder
     private var quantityField: some View {
-        Stepper(value: $viewModel.quantity) {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: BasketSpacing.sm) {
+                quantityLabel
+                quantityStepper
+            }
+        } else {
             HStack(spacing: BasketSpacing.md) {
-                Text(L10n.tr("form.quantity", locale))
-                    .font(BasketFont.bodyLarge)
-                    .foregroundColor(BasketColor.onSurface)
-                TextField(L10n.tr("form.quantity", locale), text: quantityText)
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.center)
-                    .textFieldStyle(.roundedBorder)
-                    .font(BasketFont.Money.body)
-                    .frame(width: 64)
-                    .focused($focusedField, equals: .quantity)
+                quantityLabel
+                Spacer(minLength: BasketSpacing.sm)
+                quantityStepper
             }
         }
-        .padding(.horizontal, BasketSpacing.md)
-        .frame(minHeight: BasketSpacing.rowMinHeight)
-        .background(
-            RoundedRectangle(cornerRadius: BasketShape.medium, style: .continuous)
-                .fill(BasketColor.surfaceContainerLow)
-        )
     }
 
-    private var quantityText: Binding<String> {
-        Binding(
-            get: { String(viewModel.quantity) },
-            set: { newValue in viewModel.quantity = Int(newValue) ?? viewModel.quantity }
-        )
+    private var quantityLabel: some View {
+        Text(L10n.tr("form.quantity", locale))
+            .font(BasketFont.bodyLarge)
+            .foregroundColor(BasketColor.onSurface)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var quantityStepper: some View {
+        QuantityStepper(value: viewModel.quantity,
+                        canDecrement: true,
+                        canIncrement: true,
+                        style: .full,
+                        onDecrement: { viewModel.quantity -= 1 },
+                        onIncrement: { viewModel.quantity += 1 },
+                        onValueTap: {
+                            quantityEntry = String(viewModel.quantity)
+                            isEnteringQuantity = true
+                        })
+            .alert(L10n.tr("form.quantity", locale), isPresented: $isEnteringQuantity) {
+                TextField(L10n.tr("form.quantity", locale), text: $quantityEntry)
+                    .keyboardType(.numberPad)
+                Button(L10n.tr("common.cancel", locale), role: .cancel) { }
+                Button(L10n.tr("form.quantityEntry.ok", locale)) {
+                    viewModel.quantity = Int(quantityEntry) ?? viewModel.quantity
+                }
+            }
     }
 
     // MARK: - Price
 
     private var priceField: some View {
         VStack(alignment: .leading, spacing: BasketSpacing.xs) {
-            fieldLabel(L10n.tr("form.price", locale))
-
             HStack(spacing: BasketSpacing.sm) {
                 Text(BasketRules.currencySymbol(locale: locale))
                     .font(BasketFont.bodyLarge)
@@ -213,96 +234,129 @@ import SwiftUI
                     .focused($focusedField, equals: .price)
                     .accessibilityLabel(L10n.tr("form.price", locale))
             }
-            .modifier(FormFieldStyle(isError: viewModel.showsPriceError))
+            .modifier(OutlinedFieldStyle(label: L10n.tr("form.price", locale),
+                                         isError: viewModel.showsPriceError,
+                                         isFocused: focusedField == .price))
 
-            if viewModel.showsPriceError {
-                errorText(L10n.format("form.priceError", locale,
-                                      BasketRules.formatMoney(BasketRules.minPriceCents, locale: locale),
-                                      BasketRules.formatMoney(BasketRules.maxPriceCents, locale: locale)))
-            }
+            Group {
+                if viewModel.showsPriceError {
+                    errorText(L10n.format("form.priceError", locale,
+                                          BasketRules.formatMoney(BasketRules.minPriceCents, locale: locale),
+                                          BasketRules.formatMoney(BasketRules.maxPriceCents, locale: locale)))
+                }
 
-            if let lineTotal = viewModel.lineTotalText(locale: locale) {
-                Text(lineTotal)
-                    .font(BasketFont.Money.small)
-                    .foregroundColor(BasketColor.onSurfaceVariant)
-                    .fixedSize(horizontal: false, vertical: true)
+                if let parts = viewModel.lineTotalParts(locale: locale) {
+                    (Text(parts.calculation + " ") + Text(parts.total).bold())
+                        .font(BasketFont.Money.small)
+                        .foregroundColor(BasketColor.onSurfaceVariant)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
+            .padding(.horizontal, BasketSpacing.lg)
         }
     }
 
     // MARK: - Category
 
     private var categoryField: some View {
-        VStack(alignment: .leading, spacing: BasketSpacing.xs) {
-            fieldLabel(L10n.tr("form.category", locale))
+        let selected = viewModel.selectedCategory
 
-            Picker(L10n.tr("form.category", locale), selection: $viewModel.categoryId) {
-                ForEach(store.categories) { category in
-                    Text(category.name)
-                        .tag(Optional(category.id))
+        return Menu {
+            ForEach(store.categories) { category in
+                Button {
+                    viewModel.categoryId = category.id
+                } label: {
+                    if category.id == viewModel.categoryId {
+                        Label(menuTitle(for: category), systemImage: "checkmark")
+                    } else {
+                        Text(menuTitle(for: category))
+                    }
                 }
+                .accessibilityLabel(category.name)
             }
-            .pickerStyle(.menu)
+        } label: {
+            HStack(spacing: BasketSpacing.md) {
+                if let emoji = selected?.emoji {
+                    Text(emoji)
+                        .accessibilityHidden(true)
+                }
+                Text(selected?.name ?? "")
+                    .foregroundColor(BasketColor.onSurface)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: BasketSpacing.sm)
+                Image(systemName: "chevron.down")
+                    .font(BasketFont.labelLarge)
+                    .foregroundColor(BasketColor.onSurfaceVariant)
+                    .accessibilityHidden(true)
+            }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .modifier(FormFieldStyle(isError: false))
+            .contentShape(Rectangle())
+            .modifier(OutlinedFieldStyle(label: L10n.tr("form.category", locale),
+                                         isError: false,
+                                         isFocused: false))
         }
+        .accessibilityLabel(L10n.tr("form.category", locale))
+        .accessibilityValue(selected?.name ?? "")
+    }
+
+    private func menuTitle(for category: ItemCategory) -> String {
+        if let emoji = category.emoji {
+            return emoji + " " + category.name
+        }
+        return category.name
     }
 
     // MARK: - Note
 
     private var noteField: some View {
         VStack(alignment: .leading, spacing: BasketSpacing.xs) {
-            fieldLabel(L10n.tr("form.note", locale))
-
             TextField(L10n.tr("form.notePlaceholder", locale), text: $viewModel.note)
                 .submitLabel(.done)
                 .focused($focusedField, equals: .note)
                 .onSubmit {
                     focusedField = nil
                 }
-                .modifier(FormFieldStyle(isError: false))
                 .accessibilityLabel(L10n.tr("form.note", locale))
+                .modifier(OutlinedFieldStyle(label: L10n.tr("form.note", locale),
+                                             isError: false,
+                                             isFocused: focusedField == .note))
 
             HStack {
                 Spacer(minLength: 0)
                 counterText(count: viewModel.note.count, max: BasketRules.maxNoteLength)
             }
+            .padding(.horizontal, BasketSpacing.lg)
         }
     }
 
     // MARK: - Save bar
 
     private var saveBar: some View {
-        VStack(spacing: 0) {
-            Rectangle()
-                .fill(BasketColor.outlineVariant)
-                .frame(height: 1)
-
-            Button {
-                focusedField = nil
-                viewModel.save(locale: locale) {
-                    router.push(.listDetail(viewModel.listId))
-                }
-            } label: {
-                ZStack {
-                    if viewModel.isSaving {
-                        ProgressView()
-                            .tint(BasketColor.onPrimary)
-                            .accessibilityLabel(L10n.tr("form.saving", locale))
-                    } else {
-                        Text(saveTitle)
-                            .multilineTextAlignment(.center)
-                    }
-                }
-                .frame(maxWidth: .infinity)
+        Button {
+            focusedField = nil
+            viewModel.save(locale: locale) {
+                router.push(.listDetail(viewModel.listId))
             }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(!viewModel.canSave)
-            .padding(.horizontal, BasketSpacing.lg)
-            .padding(.top, BasketSpacing.md)
-            .padding(.bottom, BasketSpacing.sm)
+        } label: {
+            ZStack {
+                if viewModel.isSaving {
+                    ProgressView()
+                        .tint(BasketColor.onPrimary)
+                        .accessibilityLabel(L10n.tr("form.saving", locale))
+                } else {
+                    Text(saveTitle)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .frame(maxWidth: .infinity)
         }
-        .background(BasketColor.surfaceContainerLow.ignoresSafeArea(edges: .bottom))
+        .buttonStyle(PrimaryButtonStyle())
+        .disabled(!viewModel.canSave)
+        .padding(.horizontal, BasketSpacing.lg)
+        .padding(.top, BasketSpacing.sm)
+        .padding(.bottom, BasketSpacing.sm)
+        .background(BasketColor.surface.ignoresSafeArea(edges: .bottom))
     }
 
     private var saveTitle: String {
@@ -354,13 +408,6 @@ import SwiftUI
 
     // MARK: - Small pieces
 
-    private func fieldLabel(_ text: String) -> some View {
-        Text(text)
-            .font(BasketFont.labelLarge)
-            .foregroundColor(BasketColor.onSurfaceVariant)
-            .accessibilityHidden(true)
-    }
-
     private func errorText(_ text: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: BasketSpacing.xs) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -381,24 +428,48 @@ import SwiftUI
     }
 }
 
-/// Outlined text-field container used by the item form.
-private struct FormFieldStyle: ViewModifier {
+/// Outlined field with its label sitting on the top border, as in the item form mockup.
+private struct OutlinedFieldStyle: ViewModifier {
+    let label: String
     let isError: Bool
+    let isFocused: Bool
+
+    private var borderColor: Color {
+        if isError {
+            return BasketColor.error
+        }
+        return isFocused ? BasketColor.primary : BasketColor.outline
+    }
+
+    private var labelColor: Color {
+        if isError {
+            return BasketColor.error
+        }
+        return isFocused ? BasketColor.primary : BasketColor.onSurfaceVariant
+    }
 
     func body(content: Content) -> some View {
         content
             .font(BasketFont.bodyLarge)
             .foregroundColor(BasketColor.onSurface)
-            .padding(.horizontal, BasketSpacing.md)
-            .padding(.vertical, BasketSpacing.sm)
-            .frame(minHeight: BasketSpacing.touchTarget)
-            .background(
-                RoundedRectangle(cornerRadius: BasketShape.medium, style: .continuous)
-                    .fill(BasketColor.surfaceContainerLow)
-            )
+            .padding(.horizontal, BasketSpacing.lg)
+            .padding(.vertical, BasketSpacing.md)
+            .frame(minHeight: 56)
             .overlay(
-                RoundedRectangle(cornerRadius: BasketShape.medium, style: .continuous)
-                    .stroke(isError ? BasketColor.error : BasketColor.outline, lineWidth: isError ? 2 : 1)
+                RoundedRectangle(cornerRadius: BasketShape.small, style: .continuous)
+                    .strokeBorder(borderColor, lineWidth: isError || isFocused ? 2 : 1)
             )
+            .overlay(alignment: .topLeading) {
+                Text(label)
+                    .font(BasketFont.bodySmall)
+                    .foregroundColor(labelColor)
+                    .lineLimit(1)
+                    .padding(.horizontal, BasketSpacing.xs)
+                    .background(BasketColor.surface)
+                    .padding(.leading, BasketSpacing.md)
+                    .alignmentGuide(.top) { dimensions in dimensions[VerticalAlignment.center] }
+                    .accessibilityHidden(true)
+            }
+            .padding(.top, BasketSpacing.sm)
     }
 }

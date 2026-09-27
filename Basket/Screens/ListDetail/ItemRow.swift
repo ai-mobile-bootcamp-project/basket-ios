@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// One item on List detail: checkbox, name, note, quantity × unit price, line total, catalog mark.
+/// One item on List detail: checkbox, name with catalog mark, note, quantity × unit price, line total.
 @MainActor struct ItemRow: View {
     let item: ListItem
     let onToggle: () -> Void
@@ -23,49 +23,27 @@ import SwiftUI
         HStack(alignment: .center, spacing: BasketSpacing.xs) {
             checkbox
 
-            HStack(alignment: .center, spacing: BasketSpacing.sm) {
+            HStack(alignment: .center, spacing: BasketSpacing.md) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(item.name)
-                        .font(BasketFont.bodyLarge)
-                        .foregroundColor(BasketColor.onSurface)
-                        .strikethrough(item.isTicked)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-
-                    if !item.note.isEmpty {
-                        Text(item.note)
-                            .font(BasketFont.bodySmall)
-                            .foregroundColor(BasketColor.onSurfaceVariant)
-                            .lineLimit(1)
-                    }
-
-                    Text(quantityPriceText)
-                        .font(BasketFont.Money.small)
-                        .foregroundColor(BasketColor.onSurfaceVariant)
-                        .lineLimit(1)
+                    nameLine
+                    detailLine
                 }
 
                 Spacer(minLength: BasketSpacing.sm)
 
-                if item.catalogProductId != nil {
-                    Image(systemName: "tag")
-                        .font(BasketFont.labelMedium)
-                        .foregroundColor(BasketColor.secondary)
-                        .accessibilityHidden(true)
-                }
-
                 Text(lineTotalText)
                     .font(BasketFont.Money.body)
-                    .foregroundColor(BasketColor.onSurface)
+                    .foregroundColor(item.isTicked ? BasketColor.onSurfaceVariant : BasketColor.onSurface)
+                    .strikethrough(item.isTicked)
                     .lineLimit(1)
             }
+            .opacity(item.isTicked ? 0.7 : 1)
             .contentShape(Rectangle())
             .onTapGesture {
                 onEdit()
             }
         }
         .frame(height: 56)
-        .opacity(item.isTicked ? 0.6 : 1)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
         .accessibilityAddTraits(.isButton)
@@ -80,17 +58,54 @@ import SwiftUI
         }
     }
 
+    // MARK: - Pieces
+
     private var checkbox: some View {
         Button {
             onToggle()
         } label: {
-            Image(systemName: item.isTicked ? "checkmark.circle.fill" : "circle")
+            Image(systemName: item.isTicked ? "checkmark.square.fill" : "square")
                 .font(.title2)
-                .foregroundColor(item.isTicked ? BasketColor.primary : BasketColor.outline)
+                .foregroundColor(item.isTicked ? BasketColor.primary : BasketColor.onSurfaceVariant)
                 .frame(width: BasketSpacing.touchTarget, height: BasketSpacing.touchTarget)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    private var nameLine: some View {
+        HStack(alignment: .firstTextBaseline, spacing: BasketSpacing.sm) {
+            Text(item.name)
+                .font(BasketFont.bodyLarge)
+                .foregroundColor(item.isTicked ? BasketColor.onSurfaceVariant : BasketColor.onSurface)
+                .strikethrough(item.isTicked)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+
+            if item.catalogProductId != nil {
+                Image(systemName: "storefront")
+                    .font(BasketFont.labelMedium)
+                    .foregroundColor(BasketColor.secondary)
+                    .accessibilityHidden(true)
+            }
+        }
+    }
+
+    private var detailLine: some View {
+        HStack(alignment: .firstTextBaseline, spacing: BasketSpacing.xs) {
+            if !item.note.isEmpty {
+                Text(item.note + " \u{00B7}")
+                    .font(BasketFont.bodyMedium)
+                    .foregroundColor(BasketColor.onSurfaceVariant)
+                    .lineLimit(1)
+            }
+
+            Text(quantityPriceText)
+                .font(BasketFont.Money.small)
+                .foregroundColor(BasketColor.onSurfaceVariant)
+                .lineLimit(1)
+                .layoutPriority(1)
+        }
     }
 
     // MARK: - Texts
