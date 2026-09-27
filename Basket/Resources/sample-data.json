@@ -1,0 +1,36 @@
+{
+  "categories": [
+    { "key": "fruitVeg", "nameKey": "category.fruitVeg", "name": "Fruit & veg" },
+    { "key": "bakery", "nameKey": "category.bakery", "name": "Bakery" },
+    { "key": "dairyEggs", "nameKey": "category.dairyEggs", "name": "Dairy & eggs" },
+    { "key": "meatFish", "nameKey": "category.meatFish", "name": "Meat & fish" },
+    { "key": "pantry", "nameKey": "category.pantry", "name": "Pantry" },
+    { "key": "frozen", "nameKey": "category.frozen", "name": "Frozen" },
+    { "key": "drinks", "nameKey": "category.drinks", "name": "Drinks" },
+    { "key": "householdPets", "nameKey": "category.householdPets", "name": "Household & pets" },
+    { "key": "other", "nameKey": "category.other", "name": "Other", "isOther": true }
+  ],
+  "lists": [
+    { "nameKey": "sample.list.weeklyShop", "name": "Weekly shop", "items": [
+      { "name": "Apple", "category": "fruitVeg", "quantity": 6, "priceCents": 174, "catalogProductId": 16 },
+      { "name": "Cucumber", "category": "fruitVeg", "quantity": 2, "priceCents": 149, "catalogProductId": 21 },
+      { "name": "Strawberry", "category": "fruitVeg", "quantity": 1, "priceCents": 395, "catalogProductId": 40 },
+      { "name": "Potatoes", "category": "fruitVeg", "quantity": 2, "priceCents": 217, "catalogProductId": 35, "ticked": true },
+      { "nameKey": "sample.item.sourdough", "name": "Sourdough bread", "category": "bakery", "quantity": 1, "noteKey": "sample.note.sliced", "note": "sliced" },
+      { "name": "Eggs", "category": "dairyEggs", "quantity": 1, "priceCents": 266, "catalogProductId": 23, "ticked": true },
+      { "name": "Milk", "category": "dairyEggs", "quantity": 2, "priceCents": 301, "catalogProductId": 32 },
+      { "name": "Rice", "category": "pantry", "quantity": 1, "priceCents": 543, "catalogProductId": 38 },
+      { "name": "Nescafe Coffee", "category": "drinks", "quantity": 1, "priceCents": 786, "catalogProductId": 34 },
+      { "name": "Tissue Paper Box", "category": "householdPets", "quantity": 1, "priceCents": 216, "catalogProductId": 41, "ticked": true }
+    ]},
+    { "nameKey": "sample.list.bbqSaturday", "name": "BBQ Saturday", "items": [
+      { "name": "Beef Steak", "category": "meatFish", "quantity": 4, "priceCents": 1174, "catalogProductId": 17 },
+      { "name": "Chicken Meat", "category": "meatFish", "quantity": 2, "priceCents": 862, "catalogProductId": 19 },
+      { "name": "Red Onions", "category": "fruitVeg", "quantity": 3, "priceCents": 179, "catalogProductId": 37 },
+      { "name": "Green Bell Pepper", "category": "fruitVeg", "quantity": 4, "priceCents": 129, "catalogProductId": 25 },
+      { "name": "Soft Drinks", "category": "drinks", "quantity": 12, "priceCents": 164, "catalogProductId": 39 },
+      { "nameKey": "sample.item.charcoal", "name": "Charcoal", "category": "other", "quantity": 1, "priceCents": 850 }
+    ]},
+    { "nameKey": "sample.list.campingTrip", "name": "Camping trip", "items": [] }
+  ]
+}

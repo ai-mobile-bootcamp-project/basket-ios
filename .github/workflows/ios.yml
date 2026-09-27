@@ -1,0 +1,25 @@
+name: iOS CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: macos-14
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 15
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+          xcodebuild -version
+
+      - name: BasketCore unit tests
+        working-directory: BasketCore
+        run: swift test
+
+      - name: Build and test app
+        run: xcodebuild -project Basket.xcodeproj -scheme Basket -destination 'platform=iOS Simulator,name=iPhone 15' build test CODE_SIGNING_ALLOWED=NO

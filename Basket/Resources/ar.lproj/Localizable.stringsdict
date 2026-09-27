@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>browse.productCount</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>few</key>
+			<string>%lld منتجات</string>
+			<key>many</key>
+			<string>%lld منتجًا</string>
+			<key>one</key>
+			<string>%lld منتج</string>
+			<key>other</key>
+			<string>%lld منتج</string>
+			<key>two</key>
+			<string>%lld منتجان</string>
+			<key>zero</key>
+			<string>%lld منتج</string>
+		</dict>
+	</dict>
+	<key>categories.itemCount</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>few</key>
+			<string>%lld عناصر</string>
+			<key>many</key>
+			<string>%lld عنصرًا</string>
+			<key>one</key>
+			<string>%lld عنصر</string>
+			<key>other</key>
+			<string>%lld عنصر</string>
+			<key>two</key>
+			<string>%lld عنصران</string>
+			<key>zero</key>
+			<string>%lld عنصر</string>
+		</dict>
+	</dict>
+	<key>detail.withoutPrice</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>few</key>
+			<string>%lld عناصر بدون سعر</string>
+			<key>many</key>
+			<string>%lld عنصراً بدون سعر</string>
+			<key>one</key>
+			<string>%lld عنصر بدون سعر</string>
+			<key>other</key>
+			<string>%lld عنصر بدون سعر</string>
+			<key>two</key>
+			<string>%lld عنصران بدون سعر</string>
+			<key>zero</key>
+			<string>%lld عنصر بدون سعر</string>
+		</dict>
+	</dict>
+	<key>form.duplicate.addMore</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>few</key>
+			<string>إضافة %lld أخرى</string>
+			<key>many</key>
+			<string>إضافة %lld أخرى</string>
+			<key>one</key>
+			<string>إضافة %lld أخرى</string>
+			<key>other</key>
+			<string>إضافة %lld أخرى</string>
+			<key>two</key>
+			<string>إضافة %lld أخريين</string>
+			<key>zero</key>
+			<string>إضافة %lld</string>
+		</dict>
+	</dict>
+</dict>
+</plist>
